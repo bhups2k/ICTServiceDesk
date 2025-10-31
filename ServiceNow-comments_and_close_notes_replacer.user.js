@@ -3,13 +3,14 @@
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field)
 // @namespace    https://imperial.ac.uk/
 // @version      1.4
-// @updateURL    https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-comments_and_close_notes_replacer.user.js
-// @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-comments_and_close_notes_replacer.user.js
 // @description  Replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident and Case.
+// @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
 // @match        https://servicemgt.service-now.com/*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-comments_and_close_notes_replacer.user.js
+// @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-comments_and_close_notes_replacer.user.js
 // ==/UserScript==
 
 (function() {
