@@ -1,9 +1,9 @@
 // -------- START CODE
 // ==UserScript==
-// @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field)
+// @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.4.1
-// @description  Replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident and Case.
+// @version      1.5
+// @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident and Case without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
 // @match        https://servicemgt.service-now.com/*
@@ -37,14 +37,12 @@
         }
     };
 
-    // Determine record type
     function getRecordType() {
         if (document.querySelector("#sys_display\\.incident\\.caller_id")) return "incident";
         if (document.querySelector("#sys_display\\.sn_customerservice_case\\.u_opened_for")) return "case";
         return null;
     }
 
-    // Safely read field values
     function getFieldValue(selector) {
         const el = document.querySelector(selector);
         return el ? el.value.trim() : "";
@@ -73,6 +71,8 @@
         if (updated !== text) {
             textarea.value = updated;
             textarea.dispatchEvent(new Event("input", { bubbles: true }));
+            textarea.dispatchEvent(new Event("change", { bubbles: true }));
+            console.log(`[UserScript] Auto-replaced content in #${textarea.id}`);
         }
     }
 
@@ -80,14 +80,19 @@
         if (!textarea || textarea.dataset.snowWatcherAttached === "true") return;
         textarea.dataset.snowWatcherAttached = "true";
 
-        textarea.addEventListener("input", () => doReplacement(textarea));
-        console.log(`[UserScript] Watching #${textarea.id} for replacements...`);
+        console.log(`[UserScript] Watching #${textarea.id} for automatic replacements...`);
 
-        // Initial check for pre-filled content
-        setTimeout(() => doReplacement(textarea), 200);
+        // Run automatically every 0.5 seconds for dynamic ServiceNow updates
+        const interval = setInterval(() => {
+            if (!document.body.contains(textarea)) {
+                clearInterval(interval);
+                return;
+            }
+            doReplacement(textarea);
+        }, 500);
     }
 
-    // Observe DOM mutations to catch dynamically added fields
+    // Observe DOM mutations to catch dynamically added textareas
     const observer = new MutationObserver(() => {
         TEXTBOX_IDS.forEach(id => {
             const textarea = document.getElementById(id);
@@ -103,5 +108,4 @@
         if (textarea) initWatcher(textarea);
     });
 })();
-
 // -------- END CODE
