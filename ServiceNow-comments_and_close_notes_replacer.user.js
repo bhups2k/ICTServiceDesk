@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.2
+// @version      1.5.3
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -24,21 +24,25 @@
     ];
 
     // Field selector sets for each table type
+    const COMMON_FIELDS = {
+        "[Your Full Name]": () => window.NOW?.user_display_name || ""
+    };
+    
     const FIELD_SETS = {
         incident: {
             "[Customer]": "#sys_display\\.incident\\.caller_id",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.incident\\.number",
-            "[Your Full Name]": () => window.NOW?.user_display_name || ""
+            ...COMMON_FIELDS
         },
         case: {
             "[Customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sn_customerservice_case\\.number",
-            "[Your Full Name]": () => window.NOW?.user_display_name || ""
+            ...COMMON_FIELDS
         },
         ritm: {
             "[Customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sc_req_item\\.number",
-            "[Your Full Name]": () => window.NOW?.user_display_name || ""
+            ...COMMON_FIELDS
         }
     };
 
