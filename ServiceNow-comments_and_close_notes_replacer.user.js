@@ -2,8 +2,8 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5
-// @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident and Case without needing to type.
+// @version      1.5.2
+// @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
 // @match        https://servicemgt.service-now.com/*
@@ -28,23 +28,32 @@
         incident: {
             "[Customer]": "#sys_display\\.incident\\.caller_id",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.incident\\.number",
-            "[Your Full Name]": "#sys_display\\.incident\\.assigned_to"
+            "[Your Full Name]": () => window.NOW?.user_display_name || ""
         },
         case: {
             "[Customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sn_customerservice_case\\.number",
-            "[Your Full Name]": "#sys_display\\.sn_customerservice_case\\.assigned_to"
+            "[Your Full Name]": () => window.NOW?.user_display_name || ""
+        },
+        ritm: {
+            "[Customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
+            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sc_req_item\\.number",
+            "[Your Full Name]": () => window.NOW?.user_display_name || ""
         }
     };
 
     function getRecordType() {
         if (document.querySelector("#sys_display\\.incident\\.caller_id")) return "incident";
         if (document.querySelector("#sys_display\\.sn_customerservice_case\\.u_opened_for")) return "case";
+        if (document.querySelector("#sys_display\\.sc_req_item\\.request\\.requested_for")) return "ritm";
         return null;
     }
 
-    function getFieldValue(selector) {
-        const el = document.querySelector(selector);
+    function getFieldValue(selectorOrFn) {
+        if (typeof selectorOrFn === "function") {
+            return selectorOrFn() || "";
+        }
+        const el = document.querySelector(selectorOrFn);
         return el ? el.value.trim() : "";
     }
 
@@ -60,8 +69,8 @@
         let text = textarea.value;
         let updated = text;
 
-        for (const [placeholder, selector] of Object.entries(replacements)) {
-            const fieldValue = getFieldValue(selector);
+        for (const [placeholder, selectorOrFn] of Object.entries(replacements)) {
+            const fieldValue = getFieldValue(selectorOrFn);
             if (fieldValue) {
                 const regex = new RegExp(escapeRegExp(placeholder), "g");
                 updated = updated.replace(regex, fieldValue);
