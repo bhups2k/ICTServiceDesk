@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.3
+// @version      1.5.4
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -13,7 +13,7 @@
 // @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-comments_and_close_notes_replacer.user.js
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     // Textboxes to monitor
@@ -23,24 +23,122 @@
         "sn_customerservice_case.close_notes"
     ];
 
+    // ------------------------------------------------------------------------------------------------------------------
+
+    const TEXTAREA_ID = "activity-stream-comments-textarea";
+    const MESSAGE_BUTTON = "sn-auto-comment-btn";
+    const COMMENT_TEXT =
+`Hello [Customer],
+
+
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+    function addButton() {
+        const textarea = document.getElementById(TEXTAREA_ID);
+        if (!textarea) return;
+
+        // Avoid duplicates
+        if (document.getElementById(MESSAGE_BUTTON)) return;
+
+        const container = textarea.closest(".sn-stream-textarea-container");
+        if (!container) return;
+
+        const btnMessage = document.createElement("button");
+        btnMessage.id = MESSAGE_BUTTON;
+        btnMessage.type = "button";
+        btnMessage.textContent = "Message";
+
+        btnMessage.style.marginTop = "6px";
+        btnMessage.style.padding = "6px 12px";
+        btnMessage.style.fontSize = "12px";
+        btnMessage.style.cursor = "pointer";
+
+        btnMessage.addEventListener("click", () => {
+            textarea.value = COMMENT_TEXT;
+            textarea.dispatchEvent(new Event("input", { bubbles: true }));
+            textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+            // 2️⃣ Set follow-up date = today + 3 days
+            setFollowUpDate(3);
+
+            console.log("[UserScript] Message inserted");
+        });
+
+        // Insert AFTER the entire textarea container
+        container.insertAdjacentElement("afterend", btnMessage);
+
+        console.log("[UserScript] Insert message button added");
+    }
+
+    function setFollowUpDate(daysToAdd) {
+        const incFollowUp = document.getElementById("incident.follow_up");
+        // if (!incFollowUp) return;
+
+        const csFollowUp = document.getElementById("sn_customerservice_case.follow_up");
+        // if (!csFollowUp) return;
+
+        const now = new Date();
+        now.setDate(now.getDate() + daysToAdd);
+
+        const pad = n => String(n).padStart(2, "0");
+
+        const formatted =
+            pad(now.getDate()) + "/" +
+            pad(now.getMonth() + 1) + "/" +
+            now.getFullYear() + " 10:00:00";
+
+        incFollowUp.value = formatted;
+        csFollowUp.value = formatted;
+
+        // Trigger ServiceNow listeners
+        incFollowUp.dispatchEvent(new Event("input", { bubbles: true }));
+        incFollowUp.dispatchEvent(new Event("change", { bubbles: true }));
+        csFollowUp.dispatchEvent(new Event("input", { bubbles: true }));
+        csFollowUp.dispatchEvent(new Event("change", { bubbles: true }));
+
+        console.log("[UserScript] Follow-up date set to", formatted);
+    }
+
+    // ServiceNow-safe polling (very lightweight)
+    const interval = setInterval(() => {
+        addButton();
+
+        // Stop once button exists
+        if (document.getElementById(MESSAGE_BUTTON)) {
+            clearInterval(interval);
+        }
+    }, 500);
+
+    // ------------------------------------------------------------------------------------------------------------------
+
     // Field selector sets for each table type
     const COMMON_FIELDS = {
-        "[Your Full Name]": () => window.NOW?.user_display_name || ""
+        "[Your Full Name]": () => window.NOW?.user_display_name || "",
+        "[your full name]": () => window.NOW?.user_display_name || ""
     };
-    
+
     const FIELD_SETS = {
         incident: {
             "[Customer]": "#sys_display\\.incident\\.caller_id",
+            "[customer]": "#sys_display\\.incident\\.caller_id",
+            "<user>": "#sys_display\\.incident\\.caller_id",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.incident\\.number",
             ...COMMON_FIELDS
         },
         case: {
             "[Customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
+            "[customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
+            "<user>": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sn_customerservice_case\\.number",
             ...COMMON_FIELDS
         },
         ritm: {
             "[Customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
+            "[customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
+            "<user>": "#sys_display\\.sc_req_item\\.request\\.requested_for",
             "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sc_req_item\\.number",
             ...COMMON_FIELDS
         }
@@ -91,8 +189,8 @@
 
     function initWatcher(textarea) {
         if (!textarea || textarea.dataset.snowWatcherAttached === "true") return;
-        textarea.dataset.snowWatcherAttached = "true";
 
+        textarea.dataset.snowWatcherAttached = "true";
         console.log(`[UserScript] Watching #${textarea.id} for automatic replacements...`);
 
         // Run automatically every 0.5 seconds for dynamic ServiceNow updates
@@ -120,5 +218,6 @@
         const textarea = document.getElementById(id);
         if (textarea) initWatcher(textarea);
     });
+
 })();
 // -------- END CODE
