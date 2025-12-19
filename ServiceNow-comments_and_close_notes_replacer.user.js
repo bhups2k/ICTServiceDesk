@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.5
+// @version      1.5.6
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -61,16 +61,49 @@ Kind regards,
             textarea.dispatchEvent(new Event("input", { bubbles: true }));
             textarea.dispatchEvent(new Event("change", { bubbles: true }));
 
-            // 2️⃣ Set follow-up date = today + 3 days
+            // 1️⃣ Set state = "On Hold" (incident.state select)
+            setSelectByLabel("incident.state", "On Hold");
+
+            // 2️⃣ Set hold reason = "Awaiting Caller" (incident.hold_reason select)
+            setSelectByLabel("incident.hold_reason", "Awaiting Caller");
+
+            // 3️⃣ Set follow-up date = today + 3 days
             setFollowUpDate(3);
 
-            console.log("[UserScript] Message inserted");
+            console.log("[UserScript] Message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
 
         // Insert AFTER the entire textarea container
         container.insertAdjacentElement("afterend", btnMessage);
 
         console.log("[UserScript] Insert message button added");
+    }
+
+    function setSelectByLabel(selectId, labelText) {
+        const select = document.getElementById(selectId);
+        if (!select) {
+            console.warn(`[UserScript] Select #${selectId} not found`);
+            return;
+        }
+
+        const options = Array.from(select.options);
+        const match = options.find(opt => opt.text.trim() === labelText.trim());
+
+        if (!match) {
+            console.warn(`[UserScript] Option "${labelText}" not found in #${selectId}`);
+            return;
+        }
+
+        if (select.value === match.value) {
+            return; // No change needed
+        }
+
+        select.value = match.value;
+
+        // Trigger ServiceNow onchange and listeners
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        select.dispatchEvent(new Event("input", { bubbles: true }));
+        console.log(`[UserScript] Set #${selectId} to "${labelText}" (value=${match.value})`);
     }
 
     function setFollowUpDate(daysToAdd) {
@@ -114,17 +147,136 @@ Kind regards,
     }
 
     // ServiceNow-safe polling (very lightweight)
-    const interval = setInterval(() => {
+    /*const interval = setInterval(() => {
         addButton();
 
         // Stop once button exists
         if (document.getElementById(MESSAGE_BUTTON)) {
             clearInterval(interval);
         }
+    }, 500); */
+    const interval = setInterval(() => {
+        addButton(); // your Message button
+        addAssignMeButton(); // new unified Assign to me button
+
+        if (document.getElementById(MESSAGE_BUTTON) &&
+            document.getElementById(ASSIGN_ME_BUTTON_ID)) {
+            clearInterval(interval);
+        }
     }, 500);
 
     // ------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
+    function setReferenceField(displayId, displayValue, hiddenId, hiddenValue) {
+        const displayEl = document.getElementById(displayId);
+        if (!displayEl) {
+            console.warn(`[UserScript] Display element #${displayId} not found`);
+            return;
+        }
 
+        displayEl.value = displayValue;
+
+        // Update hidden field if provided
+        if (hiddenId && hiddenValue !== undefined) {
+            const hiddenEl = document.getElementById(hiddenId);
+            if (hiddenEl) {
+                hiddenEl.value = hiddenValue;
+                hiddenEl.dispatchEvent(new Event("change", { bubbles: true }));
+                hiddenEl.dispatchEvent(new Event("input", { bubbles: true }));
+            } else {
+                console.warn(`[UserScript] Hidden element #${hiddenId} not found`);
+            }
+        }
+
+        // Trigger events on the display field so SN autocomplete/reference logic runs
+        displayEl.dispatchEvent(new Event("change", { bubbles: true }));
+        displayEl.dispatchEvent(new Event("input", { bubbles: true }));
+        displayEl.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        console.log(`[UserScript] Set reference #${displayId} to "${displayValue}"`);
+    }
+
+    const ASSIGN_ME_BUTTON_ID = "sn-assign-me-btn";
+
+    function addAssignMeButton() {
+        const recordType = getRecordType();
+        if (!recordType) return;
+
+        // Determine IDs per table
+        let assignedToDisplayId, assignedToHiddenId, groupDisplayId, groupHiddenId;
+
+        if (recordType === "incident") {
+            assignedToDisplayId = "sys_display.incident.assigned_to";
+            assignedToHiddenId = "incident.assigned_to";
+            groupDisplayId = "sys_display.incident.assignment_group";
+            groupHiddenId = "incident.assignment_group";
+        } else if (recordType === "case") {
+            assignedToDisplayId = "sys_display.sn_customerservice_case.assigned_to";
+            assignedToHiddenId = "sn_customerservice_case.assigned_to";
+            groupDisplayId = "sys_display.sn_customerservice_case.assignment_group";
+            groupHiddenId = "sn_customerservice_case.assignment_group";
+        } else {
+            return; // not incident/case; ignore (e.g. RITM)
+        }
+
+        const assignedToDisplay = document.getElementById(assignedToDisplayId);
+        if (!assignedToDisplay) {
+            return; // field not rendered yet
+        }
+
+        // Prevent duplicate button
+        if (document.getElementById(ASSIGN_ME_BUTTON_ID)) {
+            return;
+        }
+
+        const container = assignedToDisplay.closest(".input-group.ref-container")
+        || assignedToDisplay.closest(".form-field");
+        if (!container) {
+            console.warn("[UserScript] Could not find container for Assigned to field");
+            return;
+        }
+
+        const btn = document.createElement("button");
+        btn.id = ASSIGN_ME_BUTTON_ID;
+        btn.type = "button";
+        btn.textContent = "Assign to me";
+
+        btn.style.marginTop = "6px";
+        btn.style.padding = "6px 12px";
+        btn.style.fontSize = "12px";
+        btn.style.cursor = "pointer";
+        btn.style.display = "block";
+
+        btn.addEventListener("click", () => {
+            console.log("[UserScript] Assign to me clicked for", recordType);
+
+            // Always assign to Service Desk / Bhups Patel for now
+            const SERVICE_DESK_SYS_ID = "d625dccec0a8016700a222a0f7900d06";
+            const BHUPS_PATEL_SYS_ID  = "7921a38f1b8ef0100a368551f54bcb41";
+
+            // 1️⃣ Assignment group → Service Desk
+            setReferenceField(
+                groupDisplayId,
+                "Service Desk",
+                groupHiddenId,
+                SERVICE_DESK_SYS_ID
+            );
+
+            // 2️⃣ Assigned to → Bhups Patel
+            setReferenceField(
+                assignedToDisplayId,
+                "Bhups Patel",
+                assignedToHiddenId,
+                BHUPS_PATEL_SYS_ID
+            );
+        });
+
+        // Insert button under the Assigned to field
+        container.insertAdjacentElement("afterend", btn);
+
+        console.log("[UserScript] Assign to me button added for", recordType);
+    }
+    // ------------------------------------------------------------------------------------------------------------------
     // Field selector sets for each table type
     const COMMON_FIELDS = {
         "[Your Full Name]": () => window.NOW?.user_display_name || "",
