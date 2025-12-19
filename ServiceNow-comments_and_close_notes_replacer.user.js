@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.4
+// @version      1.5.5
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -74,11 +74,26 @@ Kind regards,
     }
 
     function setFollowUpDate(daysToAdd) {
-        const incFollowUp = document.getElementById("incident.follow_up");
-        // if (!incFollowUp) return;
+        // Initialize followUp to null
+        let followUp = null;
 
+        // Check if incident follow-up exists and assign
+        const incFollowUp = document.getElementById("incident.follow_up");
+        if (incFollowUp) {
+            followUp = incFollowUp;
+        }
+
+        // Otherwise, check if case follow-up exists and assign
         const csFollowUp = document.getElementById("sn_customerservice_case.follow_up");
-        // if (!csFollowUp) return;
+        if (csFollowUp) {
+            followUp = csFollowUp;
+        }
+
+        // If neither exists, exit
+        if (!followUp) {
+            console.warn("No follow-up field found.");
+            return;
+        }
 
         const now = new Date();
         now.setDate(now.getDate() + daysToAdd);
@@ -90,15 +105,11 @@ Kind regards,
             pad(now.getMonth() + 1) + "/" +
             now.getFullYear() + " 10:00:00";
 
-        incFollowUp.value = formatted;
-        csFollowUp.value = formatted;
+        followUp.value = formatted;
 
         // Trigger ServiceNow listeners
-        incFollowUp.dispatchEvent(new Event("input", { bubbles: true }));
-        incFollowUp.dispatchEvent(new Event("change", { bubbles: true }));
-        csFollowUp.dispatchEvent(new Event("input", { bubbles: true }));
-        csFollowUp.dispatchEvent(new Event("change", { bubbles: true }));
-
+        followUp.dispatchEvent(new Event("input", { bubbles: true }));
+        followUp.dispatchEvent(new Event("change", { bubbles: true }));
         console.log("[UserScript] Follow-up date set to", formatted);
     }
 
