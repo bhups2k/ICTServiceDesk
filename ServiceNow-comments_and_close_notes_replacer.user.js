@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.8
+// @version      1.5.9
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -51,36 +51,49 @@ Kind regards,
     // Assign to me button
     const ASSIGN_ME_BUTTON_ID = "sn-assign-me-btn";
 
-    // Common placeholder fields
+    // Keep common name fields as you already do
     const COMMON_FIELDS = {
         "[Your Full Name]": () => window.NOW?.user_display_name || "",
         "[your full name]": () => window.NOW?.user_display_name || ""
     };
 
+    // Build FIELD_SETS using the helper
     const FIELD_SETS = {
         incident: {
-            "[Customer]": "#sys_display\\.incident\\.caller_id",
-            "[customer]": "#sys_display\\.incident\\.caller_id",
-            "<user>"   : "#sys_display\\.incident\\.caller_id",
-            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.incident\\.number",...COMMON_FIELDS
+            // customer placeholders...buildCustomerFields("#sys_display\\.incident\\.caller_id"),
+            ...buildCustomerFields("#sys_display\\.incident\\.caller_id"),
+            // ticket number
+            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.incident\\.number",
+            // common name placeholders...COMMON_FIELDS
+            ...COMMON_FIELDS
         },
+
         case: {
-            "[Customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
-            "[customer]": "#sys_display\\.sn_customerservice_case\\.u_opened_for",
-            "<user>"   : "#sys_display\\.sn_customerservice_case\\.u_opened_for",
-            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sn_customerservice_case\\.number",...COMMON_FIELDS
-        },
+            ...buildCustomerFields("#sys_display\\.sn_customerservice_case\\.u_opened_for"),
+            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sn_customerservice_case\\.number",
+            ...COMMON_FIELDS
+              },
+
         ritm: {
-            "[Customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
-            "[customer]": "#sys_display\\.sc_req_item\\.request\\.requested_for",
-            "<user>"   : "#sys_display\\.sc_req_item\\.request\\.requested_for",
-            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sc_req_item\\.number",...COMMON_FIELDS
-        }
+            ...buildCustomerFields("#sys_display\\.sc_req_item\\.request\\.requested_for"),
+            "REPLACEMEWITHTICKETNUMBER": "#sys_readonly\\.sc_req_item\\.number",
+            ...COMMON_FIELDS
+              }
     };
 
     // -------------------------------------------------------------------------
     // 2. RECORD TYPE & DATA HELPERS
     // -------------------------------------------------------------------------
+
+    // Extract common “customer” mappings
+    function buildCustomerFields(selector) {
+        return {
+            "[Customer]": selector,
+            "[customer]": selector,
+            "<customer>": selector,
+            "<user>"   : selector
+        };
+    }
 
     function getRecordType() {
         if (document.querySelector("#sys_display\\.incident\\.caller_id"))                  return "incident";
