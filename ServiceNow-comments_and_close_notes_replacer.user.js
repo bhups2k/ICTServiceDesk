@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.1
+// @version      1.5.9.2
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -195,35 +195,44 @@ Kind regards,
         console.log(`[UserScript] Set #${selectId} to "${labelText}" (value=${match.value})`);
     }
 
-    function setFollowUpDate(daysToAdd) {
+    function setFollowUpDate(workingDaysToAdd) {
         let followUp = null;
-
+    
         const incFollowUp = document.getElementById("incident.follow_up");
         if (incFollowUp) followUp = incFollowUp;
-
+    
         const csFollowUp = document.getElementById("sn_customerservice_case.follow_up");
         if (csFollowUp) followUp = csFollowUp;
-
+    
         if (!followUp) {
             console.warn("No follow-up field found.");
             return;
         }
-
-        const now = new Date();
-        now.setDate(now.getDate() + daysToAdd);
-
+    
+        // Start from now
+        const target = new Date();
+        let daysRemaining = workingDaysToAdd;
+    
+        while (daysRemaining > 0) {
+            target.setDate(target.getDate() + 1);
+            const day = target.getDay(); // 0=Sun, 6=Sat
+            if (day !== 0 && day !== 6) {
+                daysRemaining--;
+            }
+        }
+    
         const pad = n => String(n).padStart(2, "0");
-
+    
         const formatted =
-            pad(now.getDate()) + "/" +
-            pad(now.getMonth() + 1) + "/" +
-            now.getFullYear() + " 10:00:00";
-
+            pad(target.getDate()) + "/" +
+            pad(target.getMonth() + 1) + "/" +
+            target.getFullYear() + " 10:00:00";
+    
         followUp.value = formatted;
-
+    
         followUp.dispatchEvent(new Event("input",  { bubbles: true }));
         followUp.dispatchEvent(new Event("change", { bubbles: true }));
-        console.log("[UserScript] Follow-up date set to", formatted);
+        console.log("[UserScript] Follow-up date (working days) set to", formatted);
     }
 
     function clearReference(displayId, hiddenId) {
