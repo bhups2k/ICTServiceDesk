@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.2
+// @version      1.5.9.3
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -359,7 +359,12 @@ Kind regards,
             let commentText =
 `Hello [Customer],
 
-Changes requested are now applied to the account [ACCOUNT].`;
+Changes requested are now applied to the account [ACCOUNT].
+Please allow a few hours for the changes to take effect.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
 
             if (accountValue) {
                 commentText = commentText.replace("[ACCOUNT]", accountValue);
