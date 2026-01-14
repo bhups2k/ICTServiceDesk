@@ -55,7 +55,8 @@ Kind regards,
     const COMMON_FIELDS = {
         "[Your Full Name]": () => window.NOW?.user_display_name || "",
         "[your full name]": () => window.NOW?.user_display_name || "",
-        "<your name>":      () => window.NOW?.user_display_name || ""
+        "<your name>":      () => window.NOW?.user_display_name || "",
+        "<name>":           () => window.NOW?.user_display_name || "",
     };
 
     // Build FIELD_SETS using the helper
