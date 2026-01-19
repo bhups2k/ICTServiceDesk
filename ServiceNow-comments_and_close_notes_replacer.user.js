@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.5
+// @version      1.5.9.6
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -513,6 +513,98 @@ Kind regards,
         console.log("[UserScript] +3 days button added for follow up");
     }
 
+    // 5.5 Close Notes
+    function addCloseNotesButton(textareaId, buttonId, label, onClick) {
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+
+        // Avoid duplicates
+        if (document.getElementById(buttonId)) return;
+
+        // Try to find a sensible container (similar to your other buttons)
+        // For standard form layout, the textarea sits inside a.form-group.form-field
+        const container =
+              textarea.closest(".form-field") ||
+              textarea.parentElement; // fallback
+
+        if (!container) {
+            console.warn(`[UserScript] Could not find container for #${textareaId}`);
+            return;
+        }
+
+        const btn = document.createElement("button");
+        btn.id = buttonId;
+        btn.type = "button";
+        btn.textContent = label;
+
+        btn.style.marginTop = "6px";
+        btn.style.padding = "6px 12px";
+        btn.style.fontSize = "12px";
+        btn.style.cursor = "pointer";
+        btn.style.display = "block";
+
+        btn.addEventListener("click", () => onClick(textarea));
+
+        // Insert just after the textarea
+        textarea.insertAdjacentElement("afterend", btn);
+
+        console.log(`[UserScript] Close notes button "${label}" added for #${textareaId}`);
+    }
+
+    function addIncidentCloseNotesButton() {
+        addCloseNotesButton(
+            "incident.close_notes",
+            "sn-close-notes-incident-btn",
+            "Generic close template",
+            (textarea) => {
+                const template =
+                      `Hello [Customer],
+
+
+
+If there is any other assistance you require, please do not hesitate to let us know. We are happy to help. Otherwise, no further action is necessary, and the ticket will automatically close after 7 days.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+                textarea.value = template;
+
+                textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+                textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+                console.log("[UserScript] Incident close notes template inserted");
+            }
+        );
+    }
+
+    function addCaseCloseNotesButton() {
+        addCloseNotesButton(
+            "sn_customerservice_case.close_notes",
+            "sn-close-notes-case-btn",
+            "Generic close template",
+            (textarea) => {
+                const template =
+                      `Hello [Customer],
+
+
+
+If there is any other assistance you require, please do not hesitate to let us know. We are happy to help. Otherwise, no further action is necessary, and the ticket will automatically close after 7 days.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+                textarea.value = template;
+
+                textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+                textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+                console.log("[UserScript] Case close notes template inserted");
+            }
+        );
+    }
+
     // -------------------------------------------------------------------------
     // 6. WATCHERS, OBSERVERS & STARTUP
     // -------------------------------------------------------------------------
@@ -541,6 +633,8 @@ Kind regards,
         addAssignMeButton();
         addPlus3DaysButton();
         addMailboxChangesButton();
+        addIncidentCloseNotesButton();
+        addCaseCloseNotesButton();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -551,6 +645,8 @@ Kind regards,
         addMailboxChangesButton();
         addAssignMeButton();
         addPlus3DaysButton();
+        addIncidentCloseNotesButton();
+        addCaseCloseNotesButton();
 
         const recordType   = getRecordType();
         const hasMessage   = document.getElementById(MESSAGE_BUTTON);
