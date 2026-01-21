@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.6
+// @version      1.5.9.7
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -60,6 +60,17 @@ Kind regards,
         "<name>":           () => window.NOW?.user_display_name || "",
     };
 
+    // Extract common “customer” mappings
+    function buildCustomerFields(selector) {
+        return {
+            "[Customer]": () => getFirstNameFromSelector(selector),
+            "[customer]": () => getFirstNameFromSelector(selector),
+            "<Customer>": () => getFirstNameFromSelector(selector),
+            "<customer>": () => getFirstNameFromSelector(selector),
+            "<user>"   : () => getFirstNameFromSelector(selector)
+        };
+    }
+
     // Build FIELD_SETS using the helper
     const FIELD_SETS = {
         incident: {
@@ -88,17 +99,6 @@ Kind regards,
     // 2. RECORD TYPE & DATA HELPERS
     // -------------------------------------------------------------------------
 
-    // Extract common “customer” mappings
-    function buildCustomerFields(selector) {
-        return {
-            "[Customer]": selector,
-            "[customer]": selector,
-            "<Customer>": selector,
-            "<customer>": selector,
-            "<user>"   : selector
-        };
-    }
-
     function getRecordType() {
         if (document.querySelector("#sys_display\\.incident\\.caller_id"))                  return "incident";
         if (document.querySelector("#sys_display\\.sn_customerservice_case\\.u_opened_for")) return "case";
@@ -112,6 +112,13 @@ Kind regards,
         }
         const el = document.querySelector(selectorOrFn);
         return el ? el.value.trim() : "";
+    }
+
+    function getFirstNameFromSelector(selector) {
+        const el = document.querySelector(selector);
+        if (!el || !el.value) return "";
+        const parts = el.value.trim().split(/\s+/); // split on whitespace
+        return parts[0] || "";
     }
 
     function escapeRegExp(str) {
