@@ -549,12 +549,22 @@ Kind regards,
         btn.style.fontSize = "12px";
         btn.style.cursor = "pointer";
         btn.style.display = "block";
-
+    
         btn.addEventListener("click", () => onClick(textarea));
-
-        // Insert just after the textarea
-        textarea.insertAdjacentElement("afterend", btn);
-
+    
+        // Find all existing close-notes buttons under this textarea
+        const existingButtons = container.querySelectorAll(
+            'button[id^="sn-close-notes-"]'
+        );
+    
+        if (existingButtons.length > 0) {
+            // Insert after the last existing button
+            existingButtons[existingButtons.length - 1].insertAdjacentElement("afterend", btn);
+        } else {
+            // First button: place after the textarea
+            textarea.insertAdjacentElement("afterend", btn);
+        }
+    
         console.log(`[UserScript] Close notes button "${label}" added for #${textareaId}`);
     }
 
