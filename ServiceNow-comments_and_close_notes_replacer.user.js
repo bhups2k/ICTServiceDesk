@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.7
+// @version      1.5.9.8
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -207,22 +207,22 @@ Kind regards,
 
     function setFollowUpDate(workingDaysToAdd) {
         let followUp = null;
-    
+
         const incFollowUp = document.getElementById("incident.follow_up");
         if (incFollowUp) followUp = incFollowUp;
-    
+
         const csFollowUp = document.getElementById("sn_customerservice_case.follow_up");
         if (csFollowUp) followUp = csFollowUp;
-    
+
         if (!followUp) {
             console.warn("No follow-up field found.");
             return;
         }
-    
+
         // Start from now
         const target = new Date();
         let daysRemaining = workingDaysToAdd;
-    
+
         while (daysRemaining > 0) {
             target.setDate(target.getDate() + 1);
             const day = target.getDay(); // 0=Sun, 6=Sat
@@ -230,16 +230,16 @@ Kind regards,
                 daysRemaining--;
             }
         }
-    
+
         const pad = n => String(n).padStart(2, "0");
-    
+
         const formatted =
             pad(target.getDate()) + "/" +
             pad(target.getMonth() + 1) + "/" +
             target.getFullYear() + " 10:00:00";
-    
+
         followUp.value = formatted;
-    
+
         followUp.dispatchEvent(new Event("input",  { bubbles: true }));
         followUp.dispatchEvent(new Event("change", { bubbles: true }));
         console.log("[UserScript] Follow-up date (working days) set to", formatted);
@@ -612,6 +612,60 @@ Kind regards,
         );
     }
 
+    function addIncidentCloseNotesButtonLibrary() {
+        addCloseNotesButton(
+            "incident.close_notes",
+            "sn-close-notes-incident-btn-library",
+            "Library close template",
+            (textarea) => {
+                const template =
+                      `Hello [Customer],
+
+Thank you for visiting the ICT Service Desk
+
+If there is any other assistance you require, please do not hesitate to let us know. We are happy to help. Otherwise, no further action is necessary, and the ticket will automatically close after 7 days.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+                textarea.value = template;
+
+                textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+                textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+                console.log("[UserScript] Incident close notes template inserted");
+            }
+        );
+    }
+
+    function addCaseCloseNotesButtonLibrary() {
+        addCloseNotesButton(
+            "sn_customerservice_case.close_notes",
+            "sn-close-notes-case-btn-library",
+            "Library close template",
+            (textarea) => {
+                const template =
+                      `Hello [Customer],
+
+Thank you for visiting the ICT Service Desk
+
+If there is any other assistance you require, please do not hesitate to let us know. We are happy to help. Otherwise, no further action is necessary, and the ticket will automatically close after 7 days.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+                textarea.value = template;
+
+                textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+                textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+                console.log("[UserScript] Case close notes template inserted");
+            }
+        );
+    }
+
     // -------------------------------------------------------------------------
     // 6. WATCHERS, OBSERVERS & STARTUP
     // -------------------------------------------------------------------------
@@ -642,6 +696,8 @@ Kind regards,
         addMailboxChangesButton();
         addIncidentCloseNotesButton();
         addCaseCloseNotesButton();
+        addIncidentCloseNotesButtonLibrary();
+        addCaseCloseNotesButtonLibrary();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -654,6 +710,8 @@ Kind regards,
         addPlus3DaysButton();
         addIncidentCloseNotesButton();
         addCaseCloseNotesButton();
+        addIncidentCloseNotesButtonLibrary();
+        addCaseCloseNotesButtonLibrary();
 
         const recordType   = getRecordType();
         const hasMessage   = document.getElementById(MESSAGE_BUTTON);
