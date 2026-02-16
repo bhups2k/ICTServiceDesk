@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.8
+// @version      1.5.9.9
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -329,7 +329,67 @@ Kind regards,
         container.insertAdjacentElement("afterend", btnMessage);
         console.log("[UserScript] Insert message button added");
     }
+    // 5.1b Chase 1 button (simple chase message, same actions as Message)
+    function addChase1Button() {
+        const textarea = document.getElementById(TEXTAREA_ID);
+        if (!textarea) return;
 
+        const CHASE1_BUTTON_ID = "sn-chase1-btn";
+
+        // Avoid duplicates
+        if (document.getElementById(CHASE1_BUTTON_ID)) return;
+
+        const container = textarea.closest(".sn-stream-textarea-container");
+        if (!container) return;
+
+        const messageButton = document.getElementById(MESSAGE_BUTTON);
+
+        const btnChase = document.createElement("button");
+        btnChase.id = CHASE1_BUTTON_ID;
+        btnChase.type = "button";
+        btnChase.textContent = "Chase 1";
+
+        btnChase.style.marginTop = "6px";
+        btnChase.style.marginLeft = "6px";      // to the right of Message
+        btnChase.style.padding = "6px 12px";
+        btnChase.style.fontSize = "12px";
+        btnChase.style.cursor = "pointer";
+
+        btnChase.addEventListener("click", () => {
+            const chaseText =
+                  `Hello [Customer],
+
+We would like to follow up on our previous email regarding this ticket as we have not received a response from you yet. If you still require assistance, please let us know, and we will be happy to help.
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+            // 1️⃣ Set the chase message
+            textarea.value = chaseText;
+            textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+            textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+            // 2️⃣ Same actions as Message button
+            //    Set state = "On Hold"
+            setSelectByLabel("incident.state", "On Hold");
+
+            //    Set hold reason = "Awaiting Caller"
+            setSelectByLabel("incident.hold_reason", "Awaiting Caller");
+
+            //    Set follow-up date = today + 3 working days at 10:00
+            setFollowUpDate(3);
+
+            console.log("[UserScript] Chase 1 message inserted, state set to On Hold, hold reason Awaiting Caller");
+        });
+
+        if (messageButton && messageButton.parentNode === container.parentNode) {
+            // Insert Chase 1 immediately after the Message button
+            messageButton.insertAdjacentElement("afterend", btnChase);
+        } else {
+            container.insertAdjacentElement("afterend", btnChase);
+        }
+    }
     // 5.2 Mailbox changes button (RITM special case)
     function addMailboxChangesButton() {
         const textarea = document.getElementById("activity-stream-comments-textarea");
@@ -549,14 +609,14 @@ Kind regards,
         btn.style.fontSize = "12px";
         btn.style.cursor = "pointer";
         btn.style.display = "block";
-    
+
         btn.addEventListener("click", () => onClick(textarea));
-    
+
         // Find all existing close-notes buttons under this textarea
         const existingButtons = container.querySelectorAll(
             'button[id^="sn-close-notes-"]'
         );
-    
+
         if (existingButtons.length > 0) {
             // Insert after the last existing button
             existingButtons[existingButtons.length - 1].insertAdjacentElement("afterend", btn);
@@ -564,7 +624,7 @@ Kind regards,
             // First button: place after the textarea
             textarea.insertAdjacentElement("afterend", btn);
         }
-    
+
         console.log(`[UserScript] Close notes button "${label}" added for #${textareaId}`);
     }
 
@@ -708,6 +768,7 @@ Kind regards,
         addCaseCloseNotesButton();
         addIncidentCloseNotesButtonLibrary();
         addCaseCloseNotesButtonLibrary();
+        addChase1Button();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -715,6 +776,7 @@ Kind regards,
     // Interval to bootstrap buttons once per form
     const interval = setInterval(() => {
         addMessageButton();
+        addChase1Button();
         addMailboxChangesButton();
         addAssignMeButton();
         addPlus3DaysButton();
