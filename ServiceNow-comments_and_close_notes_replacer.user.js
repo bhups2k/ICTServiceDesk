@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.9
+// @version      1.5.9.10
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -58,6 +58,7 @@ Kind regards,
         "<Your Name>":      () => window.NOW?.user_display_name || "",
         "<your name>":      () => window.NOW?.user_display_name || "",
         "<name>":           () => window.NOW?.user_display_name || "",
+        "<Name>":           () => window.NOW?.user_display_name || "",
     };
 
     // Extract common “customer” mappings
