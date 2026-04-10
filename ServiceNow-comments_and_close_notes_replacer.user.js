@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.12
+// @version      1.5.9.13
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -269,6 +269,19 @@ Kind regards,
         }
     }
 
+    function setWorkNotesText(text) {
+        const workNotesTextarea = document.getElementById("activity-stream-work_notes-textarea");
+        if (!workNotesTextarea) {
+            console.warn("[UserScript] Work notes textarea #activity-stream-work_notes-textarea not found");
+            return;
+        }
+
+        workNotesTextarea.value = text;
+        workNotesTextarea.dispatchEvent(new Event("input",  { bubbles: true }));
+        workNotesTextarea.dispatchEvent(new Event("change", { bubbles: true }));
+        console.log("[UserScript] Work notes text inserted");
+    }
+
     // -------------------------------------------------------------------------
     // 4. AUTO-REPLACEMENT ENGINE
     // -------------------------------------------------------------------------
@@ -409,6 +422,9 @@ Kind regards,
             setSelectByLabel("incident.hold_reason", "Awaiting Caller");
             setFollowUpDate(3);
 
+            setWorkNotesText(`MSBookings: True
+IMPORTANT: Please provide the reason for offering a field visit:`);
+
             console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
 
@@ -492,6 +508,9 @@ Kind regards,
             setSelectByLabel("incident.state",       "On Hold");
             setSelectByLabel("incident.hold_reason", "Awaiting Caller");
             setFollowUpDate(3);
+
+            setWorkNotesText(`MSBookings: True
+IMPORTANT: Please provide the reason for offering a field visit:`);
 
             console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
