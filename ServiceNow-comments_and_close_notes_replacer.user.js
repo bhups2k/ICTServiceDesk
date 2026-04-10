@@ -936,14 +936,17 @@ Kind regards,
             const textarea = document.getElementById(id);
             if (textarea) initWatcher(textarea);
         });
+        addMessageButton();
+        addCallBackButton();
+        addFieldSupportButton();
+        addChase1Button();
+        addMailboxChangesButton();
         addAssignMeButton();
         addPlus3DaysButton();
-        addMailboxChangesButton();
         addIncidentCloseNotesButton();
         addCaseCloseNotesButton();
         addIncidentCloseNotesButtonLibrary();
         addCaseCloseNotesButtonLibrary();
-        addChase1Button();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
