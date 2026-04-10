@@ -41,6 +41,9 @@ Kind regards,
 [Your Full Name]
 1st Line Support Team`;
 
+    // Call-back button
+    const CALLBACK_MESSAGE_BUTTON = "sn-auto-callback-btn";
+    
     // Follow-up +X days button
     const PLUS3_BUTTON_ID = "sn-plus3days-btn";
 
@@ -340,18 +343,65 @@ Kind regards,
         const container = textarea.closest(".sn-stream-textarea-container");
         if (!container) return;
 
-        const btnMessage = document.createElement("button");
-        btnMessage.id   = CALLBACK_MESSAGE_BUTTON;
-        btnMessage.type = "button";
-        btnMessage.textContent = "Call-back";
+        const messageButton = document.getElementById(MESSAGE_BUTTON);
 
-        btnMessage.style.marginTop  = "6px";
-        btnMessage.style.padding    = "6px 12px";
-        btnMessage.style.fontSize   = "12px";
-        btnMessage.style.cursor     = "pointer";
+        const btnCallBack = document.createElement("button");
+        btnCallBack.id   = CALLBACK_MESSAGE_BUTTON;
+        btnCallBack.type = "button";
+        btnCallBack.textContent = "Call-back";
 
-        btnMessage.addEventListener("click", () => {
-            textarea.value = COMMENT_TEXT;
+        btnCallBack.style.marginTop  = "6px";
+        btnCallBack.style.marginLeft = "6px";
+        btnCallBack.style.padding    = "6px 12px";
+        btnCallBack.style.fontSize   = "12px";
+        btnCallBack.style.cursor     = "pointer";
+
+        btnCallBack.addEventListener("click", () => {
+            const callbackText =
+`Hello [Customer],
+
+We think it's best that we call you regarding your ticket. You can easily schedule your appointment by visiting our [code]<a href="https://outlook.office365.com/owa/calendar/ICT1stLineFieldSupportCopy@ImperialLondon.onmicrosoft.com/bookings/s/rqeaGFzyLkalumD2uU2z_w2"><b>Booking</b></a>[/code] page.
+
+Your Ticket Number is: [code]<b>REPLACEMEWITHTICKETNUMBER</b>[/code]
+
+Please make sure to enter your ticket number in the designated field on the booking page. It's essential to do so, as failing to provide a valid ticket number will unfortunately lead to an automatic cancellation of your booking.
+
+[code]Alternatively, you can contact the <a href="https://www.imperial.ac.uk/admin-services/ict/contact-ict-service-desk/"><b>Service Desk</b></a> on +44 (0)20 7594 9000 and quote your ticket number.[/code]
+
+Or you can get [code]<b>in-person support</b>[/code] by visiting us [code]<b>Monday-Friday</b>[/code] at:
+[code]
+<ul>
+    <li>South Kensington
+        <ul>
+            <li>Level 1, Abdus Salam Library, 08.30-17.30</li>
+        </ul>
+    </li>
+    <li>White City
+        <ul>
+            <li>Student Hub, Michael Uren Building, 09.00-16.30</li>
+            <li>Level 1, The MediaWorks, 09.00-17.00 (Only for colleagues working there)</li>
+        </ul>
+    </li>
+    <li>Silwood Park
+        <ul>
+            <li>Hamilton Building, Main Entrance, 12.30-13.30</li>
+        </ul>
+    </li>
+    <li>Hammersmith
+        <ul>
+            <li>Library, Commonwealth Building, 09.00-16.30 (Mondays and Thursdays)</li>
+        </ul>
+    </li>
+</ul>
+[/code]
+(We are closed on university closure days.)
+
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+            textarea.value = callbackText;
             textarea.dispatchEvent(new Event("input",  { bubbles: true }));
             textarea.dispatchEvent(new Event("change", { bubbles: true }));
 
@@ -359,11 +409,16 @@ Kind regards,
             setSelectByLabel("incident.hold_reason", "Awaiting Caller");
             setFollowUpDate(3);
 
-            console.log("[UserScript] Message inserted, state set to On Hold, hold reason Awaiting Caller");
+            console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
 
-        container.insertAdjacentElement("afterend", btnMessage);
-        console.log("[UserScript] Insert message button added");
+        if (messageButton && messageButton.parentNode === container.parentNode) {
+            messageButton.insertAdjacentElement("afterend", btnCallBack);
+        } else {
+            container.insertAdjacentElement("afterend", btnCallBack);
+        }
+
+        console.log("[UserScript] Insert call-back button added");
     }
     // 5.2 Chase 1 button (simple chase message, same actions as Message)
     function addChase1Button() {
