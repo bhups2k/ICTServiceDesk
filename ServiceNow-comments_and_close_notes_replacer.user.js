@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.11
+// @version      1.5.9.12
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -44,6 +44,9 @@ Kind regards,
     // Call-back button
     const CALLBACK_MESSAGE_BUTTON = "sn-auto-callback-btn";
     
+    // In-person button
+    const FIELDSUPPORT_MESSAGE_BUTTON = "sn-auto-fieldsupport-btn";
+
     // Follow-up +X days button
     const PLUS3_BUTTON_ID = "sn-plus3days-btn";
 
@@ -369,8 +372,7 @@ Please make sure to enter your ticket number in the designated field on the book
 [code]Alternatively, you can contact the <a href="https://www.imperial.ac.uk/admin-services/ict/contact-ict-service-desk/"><b>Service Desk</b></a> on +44 (0)20 7594 9000 and quote your ticket number.[/code]
 
 Or you can get [code]<b>in-person support</b>[/code] by visiting us [code]<b>Monday-Friday</b>[/code] at:
-[code]
-<ul>
+[code]<ul>
     <li>South Kensington
         <ul>
             <li>Level 1, Abdus Salam Library, 08.30-17.30</li>
@@ -392,10 +394,8 @@ Or you can get [code]<b>in-person support</b>[/code] by visiting us [code]<b>Mon
             <li>Library, Commonwealth Building, 09.00-16.30 (Mondays and Thursdays)</li>
         </ul>
     </li>
-</ul>
-[/code]
+</ul>[/code]
 (We are closed on university closure days.)
-
 
 Kind regards,
 [Your Full Name]
@@ -419,6 +419,90 @@ Kind regards,
         }
 
         console.log("[UserScript] Insert call-back button added");
+    }
+    // 5.2 Field Support button
+    function addFieldSupportButton() {
+        const textarea = document.getElementById(TEXTAREA_ID);
+        if (!textarea) return;
+
+        if (document.getElementById(FIELDSUPPORT_MESSAGE_BUTTON)) return;
+
+        const container = textarea.closest(".sn-stream-textarea-container");
+        if (!container) return;
+
+        const messageButton = document.getElementById(MESSAGE_BUTTON);
+
+        const btnFieldSupport = document.createElement("button");
+        btnFieldSupport.id   = FIELDSUPPORT_MESSAGE_BUTTON;
+        btnFieldSupport.type = "button";
+        btnFieldSupport.textContent = "Field Support";
+
+        btnFieldSupport.style.marginTop  = "6px";
+        btnFieldSupport.style.marginLeft = "6px";
+        btnFieldSupport.style.padding    = "6px 12px";
+        btnFieldSupport.style.fontSize   = "12px";
+        btnFieldSupport.style.cursor     = "pointer";
+
+        btnFieldSupport.addEventListener("click", () => {
+            const callbackText =
+`Hello [Customer],
+
+Your ticket will require a field visit, with you present, to resolve/complete. You can schedule your appointment by visiting our [code]<a href="https://outlook.office365.com/owa/calendar/ICT1stLineFieldSupportCopy@ImperialLondon.onmicrosoft.com/bookings/?skipRedirect=1"><b>Booking</b></a>[/code] page.
+
+Your Ticket Number is: [code]<b>REPLACEMEWITHTICKETNUMBER</b>[/code]
+
+Please make sure to enter your ticket number in the designated field on the booking page. It's essential to do so, as failing to provide a valid ticket number will unfortunately lead to an automatic cancellation of your booking.
+
+[code]<b>A known issue in MS Bookings may cause the error message, "Something Went Wrong. We couldn't book that appointment. Please reload the page and try again" If this happens, please wait 5 minutes and try again. </b>[/code]
+
+Or you can get [code]<b>in-person support</b>[/code] by visiting us [code]<b>Monday-Friday</b>[/code] at:
+[code]<ul>
+    <li>South Kensington
+        <ul>
+            <li>Level 1, Abdus Salam Library, 08.30-17.30</li>
+        </ul>
+    </li>
+    <li>White City
+        <ul>
+            <li>Student Hub, Michael Uren Building, 09.00-16.30</li>
+            <li>Level 1, The MediaWorks, 09.00-17.00 (Only for colleagues working there)</li>
+        </ul>
+    </li>
+    <li>Silwood Park
+        <ul>
+            <li>Hamilton Building, Main Entrance, 12.30-13.30</li>
+        </ul>
+    </li>
+    <li>Hammersmith
+        <ul>
+            <li>Library, Commonwealth Building, 09.00-16.30 (Mondays and Thursdays)</li>
+        </ul>
+    </li>
+</ul>[/code]
+(We are closed on university closure days.)
+
+Kind regards,
+[Your Full Name]
+1st Line Support Team`;
+
+            textarea.value = callbackText;
+            textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+            textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+            setSelectByLabel("incident.state",       "On Hold");
+            setSelectByLabel("incident.hold_reason", "Awaiting Caller");
+            setFollowUpDate(3);
+
+            console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
+        });
+
+        if (messageButton && messageButton.parentNode === container.parentNode) {
+            messageButton.insertAdjacentElement("afterend", btnFieldSupport);
+        } else {
+            container.insertAdjacentElement("afterend", btnFieldSupport);
+        }
+
+        console.log("[UserScript] Insert field support button added");
     }
     // 5.2 Chase 1 button (simple chase message, same actions as Message)
     function addChase1Button() {
@@ -868,6 +952,7 @@ Kind regards,
     const interval = setInterval(() => {
         addMessageButton();
         addCallBackButton();
+        addFieldSupportButton();
         addChase1Button();
         addMailboxChangesButton();
         addAssignMeButton();
@@ -880,16 +965,17 @@ Kind regards,
         const recordType   = getRecordType();
         const hasMessage   = document.getElementById(MESSAGE_BUTTON);
         const hasCallBack  = document.getElementById(CALLBACK_MESSAGE_BUTTON);
+        const hasFieldSupport  = document.getElementById(FIELDSUPPORT_MESSAGE_BUTTON);
         const hasAssignMe  = document.getElementById(ASSIGN_ME_BUTTON_ID);
         const hasPlus3     = document.getElementById(PLUS3_BUTTON_ID);
         const hasMailboxBtn = document.getElementById(MAILBOXCHANGES_MESSAGE_BUTTON_ID);
 
         if (recordType === "ritm") {
-            if (hasMessage && hasCallBack && hasAssignMe && hasPlus3 && hasMailboxBtn) {
+            if (hasMessage && hasCallBack && hasFieldSupport && hasAssignMe && hasPlus3 && hasMailboxBtn) {
                 clearInterval(interval);
             }
         } else {
-            if (hasMessage && hasCallBack && hasAssignMe && hasPlus3) {
+            if (hasMessage && hasCallBack && hasFieldSupport && hasAssignMe && hasPlus3) {
                 clearInterval(interval);
             }
         }
