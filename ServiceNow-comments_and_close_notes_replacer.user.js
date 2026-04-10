@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.10
+// @version      1.5.9.11
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -330,7 +330,42 @@ Kind regards,
         container.insertAdjacentElement("afterend", btnMessage);
         console.log("[UserScript] Insert message button added");
     }
-    // 5.1b Chase 1 button (simple chase message, same actions as Message)
+    // 5.2 Call-back button
+    function addCallBackButton() {
+        const textarea = document.getElementById(TEXTAREA_ID);
+        if (!textarea) return;
+
+        if (document.getElementById(CALLBACK_MESSAGE_BUTTON)) return;
+
+        const container = textarea.closest(".sn-stream-textarea-container");
+        if (!container) return;
+
+        const btnMessage = document.createElement("button");
+        btnMessage.id   = CALLBACK_MESSAGE_BUTTON;
+        btnMessage.type = "button";
+        btnMessage.textContent = "Call-back";
+
+        btnMessage.style.marginTop  = "6px";
+        btnMessage.style.padding    = "6px 12px";
+        btnMessage.style.fontSize   = "12px";
+        btnMessage.style.cursor     = "pointer";
+
+        btnMessage.addEventListener("click", () => {
+            textarea.value = COMMENT_TEXT;
+            textarea.dispatchEvent(new Event("input",  { bubbles: true }));
+            textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+            setSelectByLabel("incident.state",       "On Hold");
+            setSelectByLabel("incident.hold_reason", "Awaiting Caller");
+            setFollowUpDate(3);
+
+            console.log("[UserScript] Message inserted, state set to On Hold, hold reason Awaiting Caller");
+        });
+
+        container.insertAdjacentElement("afterend", btnMessage);
+        console.log("[UserScript] Insert message button added");
+    }
+    // 5.2 Chase 1 button (simple chase message, same actions as Message)
     function addChase1Button() {
         const textarea = document.getElementById(TEXTAREA_ID);
         if (!textarea) return;
@@ -391,7 +426,7 @@ Kind regards,
             container.insertAdjacentElement("afterend", btnChase);
         }
     }
-    // 5.2 Mailbox changes button (RITM special case)
+    // 5.3 Mailbox changes button (RITM special case)
     function addMailboxChangesButton() {
         const textarea = document.getElementById("activity-stream-comments-textarea");
         if (!textarea) return;
@@ -459,7 +494,7 @@ Kind regards,
         console.log("[UserScript] Special Mailbox Message button added");
     }
 
-    // 5.3 Assign to me button
+    // 5.4 Assign to me button
     function addAssignMeButton() {
         const recordType = getRecordType();
         if (!recordType) return;
@@ -540,7 +575,7 @@ Kind regards,
         console.log("[UserScript] Assign to me button added for", recordType);
     }
 
-    // 5.4 +3 days button near follow-up
+    // 5.5 +3 days button near follow-up
     function addPlus3DaysButton() {
         let followUpElement = document.getElementById("element.incident.follow_up");
         let followUpInputId = "incident.follow_up";
@@ -581,7 +616,7 @@ Kind regards,
         console.log("[UserScript] +3 days button added for follow up");
     }
 
-    // 5.5 Close Notes
+    // 5.6 Close Notes
     function addCloseNotesButton(textareaId, buttonId, label, onClick) {
         const textarea = document.getElementById(textareaId);
         if (!textarea) return;
@@ -777,6 +812,7 @@ Kind regards,
     // Interval to bootstrap buttons once per form
     const interval = setInterval(() => {
         addMessageButton();
+        addCallBackButton();
         addChase1Button();
         addMailboxChangesButton();
         addAssignMeButton();
@@ -788,16 +824,17 @@ Kind regards,
 
         const recordType   = getRecordType();
         const hasMessage   = document.getElementById(MESSAGE_BUTTON);
+        const hasCallBack  = document.getElementById(CALLBACK_MESSAGE_BUTTON);
         const hasAssignMe  = document.getElementById(ASSIGN_ME_BUTTON_ID);
         const hasPlus3     = document.getElementById(PLUS3_BUTTON_ID);
         const hasMailboxBtn = document.getElementById(MAILBOXCHANGES_MESSAGE_BUTTON_ID);
 
         if (recordType === "ritm") {
-            if (hasMessage && hasAssignMe && hasPlus3 && hasMailboxBtn) {
+            if (hasMessage && hasCallBack && hasAssignMe && hasPlus3 && hasMailboxBtn) {
                 clearInterval(interval);
             }
         } else {
-            if (hasMessage && hasAssignMe && hasPlus3) {
+            if (hasMessage && hasCallBack && hasAssignMe && hasPlus3) {
                 clearInterval(interval);
             }
         }
