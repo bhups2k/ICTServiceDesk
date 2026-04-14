@@ -12,10 +12,12 @@
 // @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.js
 // ==/UserScript==
 
+const debug = false;
+
 (function () {
     'use strict';
 
-    console.log('[SN RICH TEXT v6.1] Script started.');
+    console.log('[SN RICH TEXT] Script started.');
 
     // =============================================
     // CONVERT contenteditable innerHTML → SN format
