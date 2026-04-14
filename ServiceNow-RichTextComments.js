@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Additional Comments
 // @namespace    https://imperial.ac.uk/
-// @version      6.1
+// @version      6.2
 // @description  WYSIWYG rich text editor - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
