@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Additional Comments
 // @namespace    https://imperial.ac.uk/
-// @version      6.2
+// @version      6.3
 // @description  WYSIWYG rich text editor - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -311,6 +311,8 @@ const debug = false;
         richEditor = doc.createElement('div');
         richEditor.id = 'snRT_richtext';
         richEditor.contentEditable = 'true';
+        richEditor.setAttribute('spellcheck', 'true');
+        richEditor.setAttribute('lang', 'en-GB');
         richEditor.setAttribute('data-placeholder',
             'Type your message here. Use the toolbar above to format...');
         richEditor.style.cssText = [
