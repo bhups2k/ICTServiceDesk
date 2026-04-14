@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.9.13
+// @version      1.5.9.14
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -282,6 +282,20 @@ Kind regards,
         console.log("[UserScript] Work notes text inserted");
     }
 
+    function uncheckNeedsAttentionCheckbox() {
+        const needsAttentionField = document.getElementById("sn_customerservice_case.needs_attention");
+        if (!needsAttentionField) {
+            if (debug) console.log("[UserScript] needs_attention field not found on this page");
+            return;
+        }
+
+        // Set value to "false" to uncheck
+        needsAttentionField.value = "false";
+        needsAttentionField.dispatchEvent(new Event("input",  { bubbles: true }));
+        needsAttentionField.dispatchEvent(new Event("change", { bubbles: true }));
+        console.log("[UserScript] needs_attention checkbox unchecked");
+    }
+
     // -------------------------------------------------------------------------
     // 4. AUTO-REPLACEMENT ENGINE
     // -------------------------------------------------------------------------
@@ -342,6 +356,8 @@ Kind regards,
             setSelectByLabel("incident.state",       "On Hold");
             setSelectByLabel("incident.hold_reason", "Awaiting Caller");
             setFollowUpDate(3);
+
+            uncheckNeedsAttentionCheckbox();
 
             console.log("[UserScript] Message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
@@ -423,7 +439,9 @@ Kind regards,
             setFollowUpDate(3);
 
             setWorkNotesText(`MSBookings: True
-IMPORTANT: Please provide the reason for offering a field visit:`);
+IMPORTANT: Please provide the reason for offering a call-back:`);
+
+            uncheckNeedsAttentionCheckbox();
 
             console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
@@ -512,6 +530,8 @@ Kind regards,
             setWorkNotesText(`MSBookings: True
 IMPORTANT: Please provide the reason for offering a field visit:`);
 
+            uncheckNeedsAttentionCheckbox();
+
             console.log("[UserScript] Call-back message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
 
@@ -573,6 +593,8 @@ Kind regards,
 
             //    Set follow-up date = today + 3 working days at 10:00
             setFollowUpDate(3);
+
+            uncheckNeedsAttentionCheckbox();
 
             console.log("[UserScript] Chase 1 message inserted, state set to On Hold, hold reason Awaiting Caller");
         });
