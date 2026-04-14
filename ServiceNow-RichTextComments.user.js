@@ -8,8 +8,8 @@
 // @match        https://servicemgt.service-now.com/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.js
-// @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.js
+// @updateURL    https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.user.js
+// @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.user.js
 // ==/UserScript==
 
 const debug = false;
