@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Additional Comments
 // @namespace    https://imperial.ac.uk/
-// @version      6.3
+// @version      6.4
 // @description  WYSIWYG rich text editor - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -11,8 +11,6 @@
 // @updateURL    https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.user.js
 // @downloadURL  https://github.com/bhups2k/ICTServiceDesk/raw/refs/heads/main/ServiceNow-RichTextComments.user.js
 // ==/UserScript==
-
-const debug = false;
 
 (function () {
     'use strict';
@@ -37,7 +35,7 @@ const debug = false;
         var result = text.replace(
             /\[code\]([\s\S]*?)\[\/code\]/gi,
             function (_, inner) {
-                return inner.replace(/\r?\n/g, '')     // remove ALL newlines.replace(/\s{2,}/g, ' ')   // collapse multiple spaces to one.replace(/>\s+</g, '><')   // remove whitespace between tags.trim();
+                return inner.replace(/\r?\n/g, '')    // remove ALL newlines.replace(/\s{2,}/g, ' ')  // collapse multiple spaces to one.replace(/>\s+</g, '><')  // remove whitespace between tags.trim();
             }
         );
 
@@ -155,6 +153,7 @@ const debug = false;
         var selectors = [
             '#activity-stream-comments-textarea',
             'textarea[id*="comments"]',
+            'textarea[id*="close_notes"]',
             'textarea[aria-label*="Additional comments"]',
             'textarea[placeholder*="Additional comments"]',
             '#comments'
@@ -176,6 +175,19 @@ const debug = false;
             }
         }
         return null;
+    }
+
+    // =============================================
+    // CONVERT IMAGE BLOB → base64 data URL
+    // Embeds image directly in HTML — no auth needed
+    // =============================================
+    function blobToBase64(blob) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload  = function () { resolve(reader.result); };
+            reader.onerror = function () { reject('FileReader error'); };
+            reader.readAsDataURL(blob);
+        });
     }
 
     // =============================================
@@ -275,12 +287,9 @@ const debug = false;
             b.title = btn.title;
             b.style.cssText = btnBase() + btn.style;
             b.addEventListener('mousedown', function (e) {
-                e.preventDefault(); // prevent editor losing focus
+                e.preventDefault();
                 if (btn.action) {
-                    // Switch to rich text tab if not already there
-                    if (activePane !== 'richtext') {
-                        showRichText();
-                    }
+                    if (activePane !== 'richtext') showRichText();
                     richEditor.focus();
                     btn.action(richEditor);
                     syncToOriginal();
@@ -292,7 +301,7 @@ const debug = false;
 
         container.appendChild(toolbar);
 
-        // ── Tab bar (2 tabs only) ─────────────────
+        // ── Tab bar ──────────────────────────────
         var tabBar = doc.createElement('div');
         tabBar.style.cssText = [
             'display:flex',
@@ -300,14 +309,14 @@ const debug = false;
             'background:rgba(0,0,0,0.02)'
         ].join(';');
 
-        var richTextTab   = makeTab(doc, '✦ Rich Text',      true);
-        var combinedTab   = makeTab(doc, '⟨/⟩ Source & Code', false);
+        var richTextTab = makeTab(doc, '✦ Rich Text',       true);
+        var combinedTab = makeTab(doc, '⟨/⟩ Source & Code', false);
 
         tabBar.appendChild(richTextTab);
         tabBar.appendChild(combinedTab);
         container.appendChild(tabBar);
 
-        // ── Rich Text pane (contenteditable WYSIWYG) ──
+        // ── Rich Text pane (contenteditable) ─────
         richEditor = doc.createElement('div');
         richEditor.id = 'snRT_richtext';
         richEditor.contentEditable = 'true';
@@ -331,7 +340,7 @@ const debug = false;
             'outline:none'
         ].join(';');
 
-        // Placeholder via CSS
+        // Placeholder CSS
         var style = doc.createElement('style');
         style.textContent =
             '#snRT_richtext:empty:before {' +
@@ -342,15 +351,12 @@ const debug = false;
             '}';
         doc.head.appendChild(style);
 
-        // ── Handle Enter key explicitly ──────────────
-        // contenteditable in ServiceNow's DOM can have
-        // Enter swallowed by parent listeners.
-        // We force a <br> insertion on Enter ourselves.
+        // ── Enter key + keyboard shortcuts ───────
         richEditor.addEventListener('keydown', function (e) {
 
             if (e.key === 'Enter') {
                 e.preventDefault();
-                e.stopPropagation(); // stop SN swallowing it
+                e.stopPropagation();
 
                 var sel = window.getSelection();
                 if (!sel || !sel.rangeCount) return;
@@ -358,19 +364,15 @@ const debug = false;
                 var range = sel.getRangeAt(0);
                 range.deleteContents();
 
-                // Insert a <br> at cursor position
                 var br = doc.createElement('br');
                 range.insertNode(br);
 
-                // Move cursor after the <br>
                 range = doc.createRange();
                 range.setStartAfter(br);
                 range.collapse(true);
                 sel.removeAllRanges();
                 sel.addRange(range);
 
-                // If at end of content, add a second <br>
-                // so cursor is visibly on the new line
                 var next = br.nextSibling;
                 if (!next || (next.nodeType === 3 && next.nodeValue === '')) {
                     var br2 = doc.createElement('br');
@@ -379,33 +381,38 @@ const debug = false;
 
                 syncToOriginal();
                 if (combinedPane.style.display !== 'none') updateCombinedPane();
+                return;
             }
 
-            // Ctrl+B / Ctrl+I / Ctrl+U shortcuts
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key.toLowerCase()) {
                     case 'b':
                         e.preventDefault();
+                        e.stopPropagation();
                         document.execCommand('bold', false, null);
                         syncToOriginal();
                         break;
                     case 'i':
                         e.preventDefault();
+                        e.stopPropagation();
                         document.execCommand('italic', false, null);
                         syncToOriginal();
                         break;
                     case 'u':
                         e.preventDefault();
+                        e.stopPropagation();
                         document.execCommand('underline', false, null);
                         syncToOriginal();
                         break;
                     case 'z':
                         e.preventDefault();
+                        e.stopPropagation();
                         document.execCommand('undo', false, null);
                         syncToOriginal();
                         break;
                     case 'y':
                         e.preventDefault();
+                        e.stopPropagation();
                         document.execCommand('redo', false, null);
                         syncToOriginal();
                         break;
@@ -416,8 +423,6 @@ const debug = false;
         container.appendChild(richEditor);
 
         // ── Combined Source & Code pane ───────────
-        // Top half: editable HTML source
-        // Bottom half: read-only [code]...[/code] output
         var combinedPane = doc.createElement('div');
         combinedPane.id = 'snRT_combined';
         combinedPane.style.cssText = [
@@ -426,7 +431,6 @@ const debug = false;
             'font-size:12px'
         ].join(';');
 
-        // Source section label
         var sourceLabel = doc.createElement('div');
         sourceLabel.style.cssText = [
             'padding:4px 10px',
@@ -439,7 +443,6 @@ const debug = false;
         sourceLabel.innerText = '✎ HTML Source  (editable — changes update Rich Text)';
         combinedPane.appendChild(sourceLabel);
 
-        // Source textarea (editable)
         var sourceArea = doc.createElement('textarea');
         sourceArea.id = 'snRT_source';
         sourceArea.placeholder = 'HTML source...';
@@ -460,7 +463,6 @@ const debug = false;
         ].join(';');
         combinedPane.appendChild(sourceArea);
 
-        // Code output section label
         var codeLabel = doc.createElement('div');
         codeLabel.style.cssText = [
             'padding:4px 10px',
@@ -473,7 +475,6 @@ const debug = false;
         codeLabel.innerText = '⟨/⟩ Final Code Output  (read-only — exactly what gets posted)';
         combinedPane.appendChild(codeLabel);
 
-        // Code output pre (read-only)
         var codeOutput = doc.createElement('pre');
         codeOutput.id = 'snRT_codeoutput';
         codeOutput.style.cssText = [
@@ -505,7 +506,8 @@ const debug = false;
             'font-family:monospace',
             'opacity:0.5'
         ].join(';');
-        statusBar.innerText = 'Viewing: Rich Text (WYSIWYG)  |  Posts as: [code]<html>[/code]';
+        statusBar.innerText =
+            'Viewing: Rich Text (WYSIWYG)  |  Posts as: [code]<html>[/code]  |  Shortcuts: Ctrl+B/I/U/Z/Y';
         container.appendChild(statusBar);
 
         // ── Hide original & insert container ─────
@@ -515,7 +517,6 @@ const debug = false;
         // =============================================
         // CORE FUNCTIONS
         // =============================================
-
         var activePane = 'richtext';
 
         function syncToOriginal() {
@@ -530,9 +531,7 @@ const debug = false;
         }
 
         function updateCombinedPane() {
-            // Source area = raw innerHTML
             sourceArea.value = richEditor.innerHTML;
-            // Code output = final [code]...[/code] string
             var html = richEditor.innerHTML;
             codeOutput.innerText = html && html !== '<br>'
                 ? htmlToSNFormat(html)
@@ -542,32 +541,31 @@ const debug = false;
         function applySourceToRich() {
             richEditor.innerHTML = sourceArea.value;
             syncToOriginal();
-            // Update code output live as source is edited
             var html = richEditor.innerHTML;
             codeOutput.innerText = html && html !== '<br>'
                 ? htmlToSNFormat(html)
                 : '(empty)';
         }
 
-        // ── Show helpers ─────────────────────────
         function showRichText() {
-            // Apply any source edits before switching
             if (activePane === 'combined') applySourceToRich();
-            richEditor.style.display    = 'block';
-            combinedPane.style.display  = 'none';
+            richEditor.style.display   = 'block';
+            combinedPane.style.display = 'none';
             setActiveTab(richTextTab, combinedTab);
             activePane = 'richtext';
-            statusBar.innerText = 'Viewing: Rich Text (WYSIWYG)  |  Posts as: [code]<html>[/code]';
+            statusBar.innerText =
+                'Viewing: Rich Text (WYSIWYG)  |  Posts as: [code]<html>[/code]  |  Shortcuts: Ctrl+B/I/U/Z/Y';
             richEditor.focus();
         }
 
         function showCombined() {
             updateCombinedPane();
-            richEditor.style.display    = 'none';
-            combinedPane.style.display  = 'block';
+            richEditor.style.display   = 'none';
+            combinedPane.style.display = 'block';
             setActiveTab(combinedTab, richTextTab);
             activePane = 'combined';
-            statusBar.innerText = 'Viewing: Source & Code  |  Posts as: [code]<html>[/code]';
+            statusBar.innerText =
+                'Viewing: Source & Code  |  Posts as: [code]<html>[/code]';
         }
 
         // ── Rich editor live sync ────────────────
@@ -576,24 +574,76 @@ const debug = false;
             if (combinedPane.style.display !== 'none') updateCombinedPane();
         });
 
-        // ── Source area live sync → rich + code ──
-        sourceArea.addEventListener('input', function () {
-            applySourceToRich();
-        });
+        // ── Source area live sync ────────────────
+        sourceArea.addEventListener('input', applySourceToRich);
 
         // ── Paste handling ───────────────────────
         richEditor.addEventListener('paste', function (e) {
             e.preventDefault();
-            if (e.clipboardData) {
-                var html = e.clipboardData.getData('text/html');
-                if (html) {
-                    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/\s*class="[^"]*"/gi, '').replace(/\s*style="[^"]*"/gi, '').replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '').replace(/<\/?(html|head|body|meta|link|xml)[^>]*>/gi, '').trim();
-                    document.execCommand('insertHTML', false, html);
-                } else {
-                    var text = e.clipboardData.getData('text/plain');
-                    document.execCommand('insertText', false, text);
+            if (!e.clipboardData) return;
+
+            var items = e.clipboardData.items;
+
+            // ── Check for image first ────────────
+            var imageItem = null;
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    imageItem = items[i];
+                    break;
                 }
             }
+
+            if (imageItem) {
+                var blob     = imageItem.getAsFile();
+                var ext      = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                var fileName = 'pasted-image-' + Date.now() + '.' + ext;
+
+                // Show placeholder while processing
+                var placeholderId = 'snRT_img_' + Date.now();
+                document.execCommand('insertHTML', false,
+                    '<span id="' + placeholderId + '" ' +
+                    'style="opacity:0.5;font-style:italic;font-size:12px;">' +
+                    '⏳ Processing image...</span>');
+
+                // Convert to base64 and embed directly — no server call needed
+                blobToBase64(blob).then(function (dataUrl) {
+                        var placeholder = doc.getElementById(placeholderId);
+                        if (placeholder) {
+                            var img = doc.createElement('img');
+                            img.src   = dataUrl;
+                            img.alt   = fileName;
+                            img.title = fileName;
+                            img.style.cssText =
+                                'max-width:100%;height:auto;display:block;' +
+                                'margin:4px 0;border:1px solid #ccc;border-radius:3px;';
+                            placeholder.parentNode.replaceChild(img, placeholder);
+                        }
+                        syncToOriginal();
+                        if (combinedPane.style.display !== 'none') updateCombinedPane();
+                        console.log('[SN RICH TEXT] ✅ Image embedded as base64.');
+                    }).catch(function (err) {
+                        var placeholder = doc.getElementById(placeholderId);
+                        if (placeholder) {
+                            placeholder.outerHTML =
+                                '<span style="color:red;font-size:12px;">' +
+                                '❌ Image error: ' + err + '</span>';
+                        }
+                        console.error('[SN RICH TEXT] ❌ base64 error:', err);
+                    });
+
+                return;
+            }
+
+            // ── Text / HTML paste ────────────────
+            var html = e.clipboardData.getData('text/html');
+            if (html) {
+                html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/\s*class="[^"]*"/gi, '').replace(/\s*style="[^"]*"/gi, '').replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '').replace(/<\/?(html|head|body|meta|link|xml)[^>]*>/gi, '').trim();
+                document.execCommand('insertHTML', false, html);
+            } else {
+                var text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            }
+
             syncToOriginal();
         });
 
@@ -608,10 +658,9 @@ const debug = false;
             expanded = !expanded;
             tabBar.style.display    = expanded ? 'flex'  : 'none';
             statusBar.style.display = expanded ? 'block' : 'none';
-
             if (expanded) {
-                richEditor.style.display   = activePane === 'richtext'  ? 'block' : 'none';
-                combinedPane.style.display = activePane === 'combined'  ? 'block' : 'none';
+                richEditor.style.display   = activePane === 'richtext' ? 'block' : 'none';
+                combinedPane.style.display = activePane === 'combined' ? 'block' : 'none';
             } else {
                 richEditor.style.display   = 'none';
                 combinedPane.style.display = 'none';
@@ -652,28 +701,26 @@ const debug = false;
             if (currentOriginal === htmlToSNFormat(richEditor.innerHTML)) return;
 
             if (currentOriginal !== '') {
-                var rendered = sourceToHTML(currentOriginal);
-                richEditor.innerHTML = rendered;
+                richEditor.innerHTML = sourceToHTML(currentOriginal);
                 lastBridgedValue     = currentOriginal;
 
                 showRichText();
-
                 syncToOriginal();
                 lastBridgedValue = fieldEl.value;
 
-                console.log('[SN RICH TEXT v6.1] ✅ Bridged & rendered external content.');
+                console.log('[SN RICH TEXT] ✅ Bridged & rendered external content.');
 
             } else {
-                richEditor.innerHTML  = '';
-                lastBridgedValue      = '';
-                sourceArea.value      = '';
-                codeOutput.innerText  = '';
-                console.log('[SN RICH TEXT v6.1] Editor cleared after post.');
+                richEditor.innerHTML = '';
+                lastBridgedValue     = '';
+                sourceArea.value     = '';
+                codeOutput.innerText = '';
+                console.log('[SN RICH TEXT] Editor cleared after post.');
             }
 
         }, 300);
 
-        console.log('[SN RICH TEXT v6.1] ✅ Injected with combined Source & Code tab!');
+        console.log('[SN RICH TEXT] ✅ Injected!');
     }
 
     // =============================================
@@ -689,7 +736,7 @@ const debug = false;
         } else if (attempts < 30) {
             setTimeout(tryInject, 1000);
         } else {
-            console.warn('[SN RICH TEXT v6.1] ❌ Field not found after 30 attempts.');
+            console.warn('[SN RICH TEXT] ❌ Field not found after 30 attempts.');
         }
     }
 
