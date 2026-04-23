@@ -158,9 +158,6 @@ const debug = false;
             'textarea[aria-label*="Additional comments"]',
             'textarea[placeholder*="Additional comments"]',
             '#comments',
-            '#sn_customerservice_case.close_notes',
-            '#incident.close_notes',
-            'textarea[id*="close_notes"]',
             '#sn_customerservice_case.work_notes',
             '#incident.work_notes',
             'textarea[id*="work_notes"]'
