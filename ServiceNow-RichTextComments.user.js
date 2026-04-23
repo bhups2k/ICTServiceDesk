@@ -160,7 +160,10 @@ const debug = false;
             '#comments',
             '#sn_customerservice_case.close_notes',
             '#incident.close_notes',
-            'textarea[id*="close_notes"]'
+            'textarea[id*="close_notes"]',
+            '#sn_customerservice_case.work_notes',
+            '#incident.work_notes',
+            'textarea[id*="work_notes"]'
         ];
 
         var docs = [document];
