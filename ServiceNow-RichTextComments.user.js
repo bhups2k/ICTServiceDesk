@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Comments and Resolution Notes
 // @namespace    https://imperial.ac.uk/
-// @version      6.5.1
+// @version      6.5.2
 // @description  WYSIWYG rich text editor for Additional Comments, Resolution Notes in INC and CS tickets - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
