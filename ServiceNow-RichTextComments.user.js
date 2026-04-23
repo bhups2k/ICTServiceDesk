@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Comments and Resolution Notes
 // @namespace    https://imperial.ac.uk/
-// @version      6.5
+// @version      6.5.1
 // @description  WYSIWYG rich text editor for Additional Comments, Resolution Notes in INC and CS tickets - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -599,13 +599,32 @@ const debug = false;
         richEditor.addEventListener('paste', function (e) {
             e.preventDefault();
             if (e.clipboardData) {
-                var html = e.clipboardData.getData('text/html');
-                if (html) {
-                    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/\s*class="[^"]*"/gi, '').replace(/\s*style="[^"]*"/gi, '').replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '').replace(/<\/?(html|head|body|meta|link|xml)[^>]*>/gi, '').trim();
-                    document.execCommand('insertHTML', false, html);
+                // Handle image files from clipboard
+                if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+                    var files = e.clipboardData.files;
+                    for (var i = 0; i < files.length; i++) {
+                        if (files[i].type.startsWith('image/')) {
+                            var reader = new FileReader();
+                            reader.onload = function (event) {
+                                var img = doc.createElement('img');
+                                img.src = event.target.result;
+                                img.style.cssText = 'max-width:100%;height:auto;';
+                                richEditor.appendChild(img);
+                                syncToOriginal();
+                                if (combinedPane.style.display !== 'none') updateCombinedPane();
+                            };
+                            reader.readAsDataURL(files[i]);
+                        }
+                    }
                 } else {
-                    var text = e.clipboardData.getData('text/plain');
-                    document.execCommand('insertText', false, text);
+                    var html = e.clipboardData.getData('text/html');
+                    if (html) {
+                        html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/\s*class="[^"]*"/gi, '').replace(/\s*style="[^"]*"/gi, '').replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '').replace(/<\/?(html|head|body|meta|link|xml)[^>]*>/gi, '').trim();
+                        document.execCommand('insertHTML', false, html);
+                    } else {
+                        var text = e.clipboardData.getData('text/plain');
+                        document.execCommand('insertText', false, text);
+                    }
                 }
             }
             syncToOriginal();
