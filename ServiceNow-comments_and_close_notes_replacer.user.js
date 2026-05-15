@@ -392,13 +392,13 @@ Kind regards,
             const callbackText =
 `Hello [Customer],
 
-We think it's best that we call you regarding your ticket. You can easily schedule your appointment by visiting our [code]<a href="https://outlook.office365.com/owa/calendar/ICT1stLineFieldSupportCopy@ImperialLondon.onmicrosoft.com/bookings/s/rqeaGFzyLkalumD2uU2z_w2"><b>Booking</b></a>[/code] page.
+We think it's best try and support you over the phone for this ticket.
+[code]You can contact the <a href="https://www.imperial.ac.uk/admin-services/ict/contact-ict-service-desk/"><b>Service Desk</b></a> on +44 (0)20 7594 9000 and quote your ticket number.[/code]
+Alternatively, you can easily schedule your appointment by visiting our [code]<a href="https://outlook.office365.com/owa/calendar/ICT1stLineFieldSupportCopy@ImperialLondon.onmicrosoft.com/bookings/s/rqeaGFzyLkalumD2uU2z_w2"><b>Booking</b></a>[/code] page.
 
 Your Ticket Number is: [code]<b>REPLACEMEWITHTICKETNUMBER</b>[/code]
 
 Please make sure to enter your ticket number in the designated field on the booking page. It's essential to do so, as failing to provide a valid ticket number will unfortunately lead to an automatic cancellation of your booking.
-
-[code]Alternatively, you can contact the <a href="https://www.imperial.ac.uk/admin-services/ict/contact-ict-service-desk/"><b>Service Desk</b></a> on +44 (0)20 7594 9000 and quote your ticket number.[/code]
 
 Or you can get [code]<b>in-person support</b>[/code] by visiting us [code]<b>Monday-Friday</b>[/code] at:
 [code]<ul>
