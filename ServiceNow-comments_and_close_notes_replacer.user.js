@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow Comments & Close Notes Auto-Replacer (multi-field, auto-run)
 // @namespace    https://imperial.ac.uk/
-// @version      1.5.10
+// @version      1.5.11
 // @description  Automatically replace placeholders in Additional Comments and Close Notes textboxes with correct field values for Incident, Case, and RITM without needing to type.
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -763,6 +763,11 @@ Kind regards,
         if (!followUpElement) {
             followUpElement = document.getElementById("element.sn_customerservice_case.follow_up");
             followUpInputId = "sn_customerservice_case.follow_up";
+        }
+
+        if (!followUpElement) {
+            followUpElement = document.getElementById("element.sc_task.follow_up");
+            followUpInputId = "sc_task.follow_up";
         }
 
         if (!followUpElement) return;
