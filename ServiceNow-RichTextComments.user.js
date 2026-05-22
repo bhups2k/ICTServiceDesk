@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Comments and Resolution Notes
 // @namespace    https://imperial.ac.uk/
-// @version      6.5.2
+// @version      6.5.3
 // @description  WYSIWYG rich text editor for Additional Comments, Resolution Notes in INC and CS tickets - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -45,6 +45,29 @@ const debug = false;
         result = result.replace(/\r?\n/g, '<br>');
 
         return result;
+    }
+
+    // =============================================
+    // TABLE HELPERS
+    // =============================================
+    function createTableHTML(rows, cols) {
+        rows = Math.max(1, Math.min(20, parseInt(rows, 10) || 1));
+        cols = Math.max(1, Math.min(20, parseInt(cols, 10) || 1));
+        var html = '<table style="border-collapse:collapse;width:100%;margin:0 0 1em 0;">';
+        html += '<tbody>';
+        for (var r = 0; r < rows; r++) {
+            html += '<tr>';
+            for (var c = 0; c < cols; c++) {
+                if (r === 0) {
+                    html += '<th style="border:1px solid #999;padding:6px;text-align:left;background:#f4f4f4;">Header</th>';
+                } else {
+                    html += '<td style="border:1px solid #999;padding:6px;">&nbsp;</td>';
+                }
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        return html;
     }
 
     // =============================================
@@ -97,6 +120,18 @@ const debug = false;
             label: '1.', title: 'Numbered List',
             style: '',
             action: function () { document.execCommand('insertOrderedList', false, null); }
+        },
+        {
+            label: 'Tbl', title: 'Insert Table',
+            style: '',
+            action: function () {
+                var rows = prompt('Number of rows:', '3');
+                if (!rows) return;
+                var cols = prompt('Number of columns:', '3');
+                if (!cols) return;
+                var html = createTableHTML(rows, cols);
+                document.execCommand('insertHTML', false, html);
+            }
         },
         { label: '|', title: '', style: 'cursor:default;opacity:0.3;', action: null },
         {
