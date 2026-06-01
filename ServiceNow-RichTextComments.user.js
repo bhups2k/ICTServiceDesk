@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ServiceNow - Rich Text Toolbar for Comments and Resolution Notes
 // @namespace    https://imperial.ac.uk/
-// @version      6.5.4
+// @version      6.5.5
 // @description  WYSIWYG rich text editor for Additional Comments, Resolution Notes in INC and CS tickets - Rich Text + combined Source & Code tab
 // @author       Bhups Patel
 // @match        https://servicemgt.imperial.ac.uk/*
@@ -652,7 +652,21 @@ const debug = false;
                                 var img = doc.createElement('img');
                                 img.src = event.target.result;
                                 img.style.cssText = 'max-width:100%;height:auto;';
-                                richEditor.appendChild(img);
+                                
+                                // Insert image at cursor position, not at end
+                                var sel = window.getSelection();
+                                if (sel && sel.rangeCount > 0) {
+                                    var range = sel.getRangeAt(0);
+                                    range.insertNode(img);
+                                    // Move cursor after the image
+                                    range.setStartAfter(img);
+                                    range.collapse(true);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                } else {
+                                    richEditor.appendChild(img);
+                                }
+                                
                                 syncToOriginal();
                                 if (combinedPane.style.display !== 'none') updateCombinedPane();
                             };
